@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EuroLeague Live Standings (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+:root {
+  --bg:#07080b; --s1:#0e1018; --s2:#141720; --s3:#1a1f2e;
+  --border:#252b3b; --border2:#323a50;
+  --text:#dde3f0; --muted:#6b7694; --dim:#3d4560;
+  --accent:#f0a500; --blue:#3b82f6; --purple:#8b5cf6;
+  --green:#22c55e; --red:#ef4444;
+  --ff:'Barlow',sans-serif; --fd:'Barlow Condensed',sans-serif; --fm:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 15% 20%,rgba(240,165,0,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 85% 80%,rgba(59,130,246,.04) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+header{position:sticky;top:0;z-index:100;background:rgba(7,8,11,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.header-wrap{max-width:1320px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-ball{width:36px;height:36px;background:var(--accent);border-radius:50%;display:grid;place-items:center;font-size:18px;box-shadow:0 0 20px rgba(240,165,0,.3);animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.logo h1{font-family:var(--fd);font-size:26px;font-weight:800;letter-spacing:3px;color:var(--accent);line-height:1}
+.logo-sub{font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:3px}
+
+.mode-toggle{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:4px;gap:4px}
+.mode-btn{padding:8px 20px;border:none;border-radius:5px;cursor:pointer;font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:1.5px;transition:all .25s;color:var(--muted);background:transparent;display:flex;align-items:center;gap:7px}
+.mode-btn:hover{color:var(--text)}
+.mode-btn.active{background:var(--accent);color:#000;box-shadow:0 0 16px rgba(240,165,0,.25)}
+.mode-btn.mode-tb.active{background:var(--blue);box-shadow:0 0 16px rgba(59,130,246,.25)}
+
+.hdr-right{display:flex;align-items:center;gap:10px}
+.live-ind{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--s2);border:1px solid var(--border);font-family:var(--fm);font-size:10px;color:var(--muted);letter-spacing:1px;transition:all .3s}
+.live-ind.live{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:var(--green)}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.live-ind.live .pulse-dot{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+.round-pill{padding:5px 12px;border-radius:20px;background:var(--s2);border:1px solid var(--border);font-family:var(--fm);font-size:10px;color:var(--muted);letter-spacing:1px}
+
+.mode-desc{max-width:1320px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);transition:all .3s}
+.mode-desc .mode-icon{font-size:14px;flex-shrink:0}
+.mode-desc .mode-label{font-weight:600;margin-right:4px}
+.mode-desc.mode-current .mode-label{color:var(--accent)}
+.mode-desc.mode-tiebreak .mode-label{color:var(--blue)}
+
+main{max-width:1320px;margin:0 auto;padding:20px;position:relative;z-index:1}
+.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.round-disp{display:flex;align-items:baseline;gap:8px}
+.round-label{font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--dim)}
+.round-big{font-family:var(--fd);font-size:36px;font-weight:800;color:var(--accent);line-height:1}
+.tabs{display:flex;gap:2px;background:var(--s1);border:1px solid var(--border);border-radius:7px;padding:3px}
+.tab{padding:7px 18px;border:none;border-radius:4px;background:transparent;color:var(--muted);font-family:var(--ff);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--s3);color:var(--text)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.live-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.live-card{flex-shrink:0;background:var(--s1);border:1px solid rgba(34,197,94,.5);border-radius:8px;padding:10px 14px;min-width:190px;position:relative;animation:bc-pulse 2s ease-in-out infinite}
+@keyframes bc-pulse{0%,100%{border-color:rgba(34,197,94,.3)}50%{border-color:rgba(34,197,94,.8)}}
+.live-card::before{content:'LIVE';position:absolute;top:6px;right:8px;font-family:var(--fm);font-size:8px;letter-spacing:2px;color:var(--green)}
+.lc-time{font-family:var(--fm);font-size:9px;color:var(--green);margin-bottom:8px;letter-spacing:1px}
+.lc-teams{display:flex;flex-direction:column;gap:5px}
+.lc-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lc-name{font-size:12px;font-weight:600;color:var(--muted)}
+.lc-row.lead .lc-name{color:var(--text)}
+.lc-score{font-family:var(--fd);font-size:20px;font-weight:700;color:var(--accent)}
+
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.leg{font-family:var(--fm);font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--s1)}
+.leg.playoffs{color:#93c5fd;border-color:rgba(59,130,246,.25);background:rgba(59,130,246,.06)}
+.leg.playin{color:#c4b5fd;border-color:rgba(139,92,246,.25);background:rgba(139,92,246,.06)}
+.leg.out{color:var(--dim);background:var(--s1)}
+
+.tbl-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:680px}
+thead{background:var(--s2);border-bottom:1px solid var(--border)}
+th{padding:10px 14px;font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--dim);text-align:left;white-space:nowrap}
+.num-cell{text-align:center}
+tbody tr{border-bottom:1px solid rgba(37,43,59,.5);transition:background .15s;position:relative}
+td{padding:11px 14px;vertical-align:middle;font-size:14px}
+.sep-row td{padding:0}
+
+.zone-sep{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);position:relative;margin:1px 0}
+.zone-sep::after{content:attr(data-label);position:absolute;right:14px;top:-9px;font-family:var(--fm);font-size:8px;letter-spacing:1.5px;padding:2px 8px;border-radius:3px;background:var(--s2);border:1px solid var(--border)}
+.zone-sep.playoffs::after{color:#93c5fd;border-color:rgba(59,130,246,.25)}
+.zone-sep.playin::after{color:#c4b5fd;border-color:rgba(139,92,246,.25)}
+.zone-sep.out::after{color:var(--dim)}
+
+.pos-num{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--dim);text-align:center;line-height:1}
+.pos-num.top6{color:#60a5fa}
+.pos-num.playin-pos{color:#c4b5fd}
+.delta{font-family:var(--fm);font-size:9px;display:block;text-align:center;height:11px;margin-top:2px}
+.delta.up{color:var(--green)}
+.delta.down{color:var(--red)}
+.delta.same{color:var(--dim)}
+
+.team-cell{display:flex;align-items:center;gap:10px}
+.zone-bar{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.zone-bar.playoffs{background:var(--blue)}
+.zone-bar.playin{background:var(--purple)}
+.zone-bar.out{background:var(--border)}
+.flag{font-size:16px;line-height:1;flex-shrink:0}
+.tname{font-weight:600;font-size:14px;white-space:nowrap}
+.tcode{font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:1px}
+
+.w-cell{color:var(--green);font-family:var(--fm);font-size:13px;font-weight:600}
+.l-cell{color:var(--red);font-family:var(--fm);font-size:13px}
+.muted-cell{color:var(--muted);font-family:var(--fm);font-size:12px}
+.num-cell{font-family:var(--fm);font-size:12px}
+.proj-w{color:var(--accent);font-size:9px;margin-left:3px}
+
+.diff-val{font-family:var(--fm);font-size:12px}
+.diff-val.pos{color:var(--green)}
+.diff-val.neg{color:var(--red)}
+.diff-val.zero{color:var(--dim)}
+
+.live-sc{font-family:var(--fm);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:1px;animation:flicker 4s ease-in-out infinite}
+@keyframes flicker{0%,100%{opacity:1}93%{opacity:1}96%{opacity:.6}99%{opacity:1}}
+.live-q{font-size:8px;color:var(--muted);letter-spacing:.5px}
+
+.h2h-cell{text-align:center;font-family:var(--fm);font-size:11px;color:var(--muted)}
+.h2h-diff{display:block;font-size:11px;margin-top:1px}
+.h2h-diff.pos{color:var(--green)}
+.h2h-diff.neg{color:var(--red)}
+
+.badge{font-family:var(--fm);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.badge.live{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);animation:bc-pulse 2s ease-in-out infinite}
+.badge.poff{background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.2)}
+.badge.pin{background:rgba(139,92,246,.1);color:#c4b5fd;border:1px solid rgba(139,92,246,.2)}
+.badge.out{background:var(--s2);color:var(--dim);border:1px solid var(--border)}
+
+tbody tr.moved-up{animation:mu .5s ease forwards}
+tbody tr.moved-down{animation:md .5s ease forwards}
+@keyframes mu{from{background:rgba(34,197,94,.1)}to{background:transparent}}
+@keyframes md{from{background:rgba(239,68,68,.1)}to{background:transparent}}
+
+.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.gc{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;transition:border-color .2s}
+.gc.live::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green)}
+.gc-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.gc-round{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--dim)}
+.gc-live{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--green);animation:flicker 2s ease-in-out infinite}
+.gc-teams{display:flex;flex-direction:column;gap:5px}
+.gc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:5px;background:var(--s2)}
+.gc-row.winner{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.12)}
+.gc-name{font-weight:600;font-size:13px}
+.gc-score{font-family:var(--fd);font-size:20px;font-weight:700;color:var(--accent)}
+
+footer{max-width:1320px;margin:40px auto 20px;padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.5px}
+@media(max-width:768px){
+  .header-wrap{flex-direction:column;align-items:flex-start}
+  .mode-toggle{width:100%}
+  .mode-btn{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<header>
+  <div class="header-wrap">
+    <div class="logo">
+      <div class="logo-ball">🏀</div>
+      <div>
+        <h1>EUROLEAGUE</h1>
+        <div class="logo-sub">LIVE STANDINGS · DEMO MODE</div>
+      </div>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-current"><span>📊</span> CURRENT</button>
+      <button class="mode-btn mode-tb" id="btn-tiebreaker"><span>⚖️</span> END SEASON</button>
+    </div>
+    <div class="hdr-right">
+      <div class="live-ind live" id="liveIndicator"><span class="pulse-dot"></span><span id="liveText">SIMULATING LIVE</span></div>
+      <div class="round-pill">ROUND <span id="roundNum">34</span></div>
+    </div>
+  </div>
+  <div class="mode-desc mode-current" id="modeDesc">
+    <span class="mode-icon">📊</span>
+    <strong class="mode-label">CURRENT STANDINGS:</strong>
+    <span>Updates live based on scores</span>
+  </div>
+</header>
+
+<main>
+  <div class="top-bar">
+    <div class="round-disp">
+      <span class="round-label">ROUND</span>
+      <span class="round-big">34</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="standings">Standings</button>
+      <button class="tab" data-tab="games">Live Games</button>
+    </div>
+  </div>
+
+  <div class="live-strip" id="liveStrip" style="display:flex"></div>
+
+  <div class="tab-panel active" id="tab-standings">
+    <div class="legend">
+      <div class="leg playoffs">TOP 6 · Playoffs</div>
+      <div class="leg playin">7-10 · Play-In</div>
+      <div class="leg out">11-20 · Eliminated</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num-cell">#</th>
+            <th>TEAM</th>
+            <th class="num-cell">W</th>
+            <th class="num-cell">L</th>
+            <th class="num-cell">PF</th>
+            <th class="num-cell">PA</th>
+            <th class="num-cell">DIFF</th>
+            <th class="num-cell">LIVE</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-games">
+    <div class="games-grid" id="gamesGrid"></div>
+  </div>
+</main>
+
+<footer>
+  <div>Data: <strong>Simulated MOCK Data</strong> for Demonstration</div>
+  <div>Tiebreakers: Standard W/L and Point Diff applied for demo</div>
+</footer>
+
+<script>
+// Mock Data for 18 Teams
+const MOCK_TEAMS = [
+  { code: 'RMB', name: 'Real Madrid', w: 26, l: 7, pf: 2900, pa: 2600, flag: '🇪🇸' },
+  { code: 'PAO', name: 'Panathinaikos', w: 22, l: 11, pf: 2750, pa: 2580, flag: '🇬🇷' },
+  { code: 'MCO', name: 'AS Monaco', w: 22, l: 11, pf: 2770, pa: 2670, flag: '🇫🇷' },
+  { code: 'FCB', name: 'FC Barcelona', w: 22, l: 11, pf: 2810, pa: 2690, flag: '🇪🇸' },
+  { code: 'OLY', name: 'Olympiacos', w: 21, l: 12, pf: 2650, pa: 2530, flag: '🇬🇷' },
+  { code: 'FBK', name: 'Fenerbahce', w: 20, l: 13, pf: 2850, pa: 2720, flag: '🇹🇷' },
+  { code: 'MTA', name: 'Maccabi', w: 19, l: 14, pf: 2960, pa: 2930, flag: '🇮🇱' },
+  { code: 'BAS', name: 'Baskonia', w: 17, l: 16, pf: 2840, pa: 2860, flag: '🇪🇸' },
+  { code: 'EFS', name: 'Anadolu Efes', w: 16, l: 17, pf: 2870, pa: 2850, flag: '🇹🇷' },
+  { code: 'VIR', name: 'Virtus Bologna', w: 16, l: 17, pf: 2720, pa: 2800, flag: '🇮🇹' },
+  { code: 'PAR', name: 'Partizan', w: 15, l: 18, pf: 2830, pa: 2850, flag: '🇷🇸' },
+  { code: 'MIL', name: 'Olimpia Milano', w: 15, l: 18, pf: 2640, pa: 2630, flag: '🇮🇹' },
+  { code: 'VAL', name: 'Valencia', w: 14, l: 19, pf: 2570, pa: 2670, flag: '🇪🇸' },
+  { code: 'ZAL', name: 'Zalgiris', w: 14, l: 19, pf: 2690, pa: 2710, flag: '🇱🇹' },
+  { code: 'BAY', name: 'Bayern Munich', w: 13, l: 20, pf: 2600, pa: 2720, flag: '🇩🇪' },
+  { code: 'CZV', name: 'Crvena Zvezda', w: 11, l: 22, pf: 2760, pa: 2810, flag: '🇷🇸' },
+  { code: 'ASV', name: 'ASVEL', w: 8, l: 25, pf: 2640, pa: 2850, flag: '🇫🇷' },
+  { code: 'BER', name: 'ALBA Berlin', w: 5, l: 28, pf: 2590, pa: 2940, flag: '🇩🇪' }
+];
+
+// Setup simulated live games
+let liveGames = [
+  { home: 'PAO', away: 'MTA', homeName: 'Panathinaikos', awayName: 'Maccabi', homeScore: 78, awayScore: 76, q: 'Q4', clock: '02:15' },
+  { home: 'OLY', away: 'FCB', homeName: 'Olympiacos', awayName: 'FC Barcelona', homeScore: 65, awayScore: 68, q: 'Q3', clock: '05:30' }
+];
+
+let mode = 'current';
+let prevOrder = [];
+const $ = id => document.getElementById(id);
+const fmt = n => n > 0 ? `+${n}` : String(n);
+
+function getZone(pos) { return pos <= 6 ? 'playoffs' : pos <= 10 ? 'playin' : 'out'; }
+
+// Simulate Random Scoring
+function simulateScores() {
+  liveGames.forEach(g => {
+    if(Math.random() > 0.5) g.homeScore += Math.floor(Math.random() * 3);
+    if(Math.random() > 0.5) g.awayScore += Math.floor(Math.random() * 3);
+  });
+  renderAll();
+}
+
+function renderAll() {
+  // Map live scores to teams
+  const liveMap = {};
+  liveGames.forEach(g => {
+    liveMap[g.home] = { score: g.homeScore, opp: g.awayScore, isWin: g.homeScore > g.awayScore, q: g.q };
+    liveMap[g.away] = { score: g.awayScore, opp: g.homeScore, isWin: g.awayScore > g.homeScore, q: g.q };
+  });
+
+  // Calculate Standings
+  let standings = MOCK_TEAMS.map(t => {
+    let diff = t.pf - t.pa;
+    let projW = t.w;
+    let ls = liveMap[t.code];
+    if (ls) {
+      diff += (ls.score - ls.opp);
+      if (ls.isWin) projW += 1;
+    }
+    return { ...t, diff, projW, ls };
+  });
+
+  // Sort Logic (Simplified Tiebreaker for Demo)
+  standings.sort((a, b) => {
+    let wA = mode === 'current' ? a.projW : a.w;
+    let wB = mode === 'current' ? b.projW : b.w;
+    if (wB !== wA) return wB - wA;
+    return b.diff - a.diff; // Sort by diff if W is equal
+  });
+
+  let currOrder = standings.map(t => t.code);
+  let tbody = '';
+  
+  standings.forEach((t, i) => {
+    let pos = i + 1;
+    let zone = getZone(pos);
+    
+    // Position Delta (Arrows)
+    let pIdx = prevOrder.indexOf(t.code);
+    let delta = '<span class="delta same">—</span>';
+    let rCls = '';
+    if (prevOrder.length && pIdx !== -1 && pIdx !== i) {
+      let d = pIdx - i;
+      delta = d > 0 ? `<span class="delta up">▲${d}</span>` : `<span class="delta down">▼${Math.abs(d)}</span>`;
+      rCls = d > 0 ? 'moved-up' : 'moved-down';
+    }
+
+    // Zone separators
+    let sep = '';
+    if (pos===1) sep = `<tr class="sep-row"><td colspan="9"><div class="zone-sep playoffs" data-label="TOP 6 · PLAYOFFS"></div></td></tr>`;
+    if (pos===7) sep = `<tr class="sep-row"><td colspan="9"><div class="zone-sep playin" data-label="7-10 · PLAY-IN"></div></td></tr>`;
+    if (pos===11) sep = `<tr class="sep-row"><td colspan="9"><div class="zone-sep out" data-label="11-20 · ELIMINATED"></div></td></tr>`;
+
+    // Live Cell
+    let lCell = '<td class="num-cell">—</td>';
+    if(t.ls) {
+      let col = t.ls.isWin ? 'var(--green)' : 'var(--red)';
+      lCell = `<td class="num-cell"><div class="live-sc" style="color:${col}">${t.ls.score}-${t.ls.opp}<span class="live-q">${t.ls.q}</span></div></td>`;
+    }
+
+    let badge = t.ls ? `<span class="badge live">● LIVE</span>` : `<span class="badge ${zone==='playoffs'?'poff':zone==='playin'?'pin':'out'}">${zone.toUpperCase()}</span>`;
+
+    tbody += sep + `<tr class="${rCls}">
+      <td class="num-cell"><div class="pos-num ${zone==='playoffs'?'top6':zone==='playin'?'playin-pos':''}">${pos}</div>${delta}</td>
+      <td><div class="team-cell"><div class="zone-bar ${zone}"></div><span class="flag">${t.flag}</span><div><div class="tname">${t.name}</div><div class="tcode">${t.code}</div></div></div></td>
+      <td class="num-cell w-cell">${t.w}${t.ls && t.ls.isWin ? '<span class="proj-w">+W</span>':''}</td>
+      <td class="num-cell l-cell">${t.l}</td>
+      <td class="num-cell">${t.pf}</td><td class="num-cell">${t.pa}</td>
+      <td class="num-cell"><span class="diff-val ${t.diff>0?'pos':t.diff<0?'neg':'zero'}">${fmt(t.diff)}</span></td>
+      ${lCell}
+      <td>${badge}</td>
+    </tr>`;
+  });
+  $('standingsBody').innerHTML = tbody;
+  prevOrder = currOrder;
+
+  // Render Live Strip
+  $('liveStrip').innerHTML = liveGames.map(g => `
+    <div class="live-card"><div class="lc-time">${g.q} ${g.clock}</div>
+    <div class="lc-teams"><div class="lc-row ${g.homeScore >= g.awayScore ? 'lead':''}"><span class="lc-name">${g.home}</span><span class="lc-score">${g.homeScore}</span></div>
+    <div class="lc-row ${g.awayScore > g.homeScore ? 'lead':''}"><span class="lc-name">${g.away}</span><span class="lc-score">${g.awayScore}</span></div></div></div>
+  `).join('');
+
+  // Render Games Grid
+  $('gamesGrid').innerHTML = liveGames.map(g => `
+    <div class="gc live"><div class="gc-meta"><span class="gc-round">R34</span><span class="gc-live">● ${g.q}</span></div>
+    <div class="gc-teams"><div class="gc-row"><span class="gc-name">${g.homeName}</span><span class="gc-score">${g.homeScore}</span></div>
+    <div class="gc-row"><span class="gc-name">${g.awayName}</span><span class="gc-score">${g.awayScore}</span></div></div></div>
+  `).join('');
+}
+
+// UI Toggles
+$('btn-current').onclick = () => { mode = 'current'; $('btn-current').classList.add('active'); $('btn-tiebreaker').classList.remove('active'); renderAll(); };
+$('btn-tiebreaker').onclick = () => { mode = 'tb'; $('btn-tiebreaker').classList.add('active'); $('btn-current').classList.remove('active'); renderAll(); };
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  b.classList.add('active'); $(`tab-${b.dataset.tab}`).classList.add('active');
+});
+
+// Start Simulation
+renderAll();
+setInterval(simulateScores, 3000);
+</script>
+</body>
+</html>
