@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/euro-api/:path*",
-      "destination": "https://api-live.euroleague.net/:path*"
-    }
-  ]
-}
